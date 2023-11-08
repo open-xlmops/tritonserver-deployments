@@ -1,0 +1,52 @@
+version: "3.8"
+
+name: trironserver
+
+services:
+  server: # https://github.com/triton-inference-server/server/blob/main/docs/getting_started/quickstart.md#launch-triton
+    # https://catalog.ngc.nvidia.com/orgs/nvidia/containers/tritonserver
+    image: nvcr.io/nvidia/tritonserver:23.10-py3
+    container_name: tritonserver-server
+    command: ["tritonserver", "--model-repository=/models"]
+    networks:
+      - tritonserver
+    ports:
+      - "8000:8000" # HTTPService
+      - "8001:8001" # GRPCInferenceService
+      - "8002:8002" # Metrics
+    volumes:
+      - "${PWD}/data/model_repository:/models"
+    deploy:
+      resources:
+        reservations:  
+          devices:
+            - driver: nvidia
+              device_ids: ['0']
+              capabilities: [compute,utility]
+  webui: # https://github.com/duydvu/triton-inference-server-web-ui
+    image: duyvd/triton-inference-server-web-ui:latest
+    container_name: tritonserver-webui
+    depends_on:
+      - server
+    environment:
+      - API_URL=http://server:8000
+      - API_AUTH_HEADER=${API_AUTH_HEADER}
+    networks:
+      - tritonserver
+    ports:
+      - "23000:3000"
+  client:
+    image: nvcr.io/nvidia/tritonserver:23.10-py3-sdk
+    container_name: tritonserver-client
+    networks:
+      - tritonserver
+    depends_on:
+      - server
+
+networks:
+  tritonserver:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.231.0.0/16
