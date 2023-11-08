@@ -1,2 +1,6 @@
 # tritonserver-deployments
-deployments for NVIDAI Triton Inference Server
+
+## Components
+
+- [Server]():
+- [WebUI](https://github.com/duydvu/triton-inference-server-web-ui):
