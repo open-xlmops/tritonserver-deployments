@@ -7,7 +7,7 @@ services:
     # https://catalog.ngc.nvidia.com/orgs/nvidia/containers/tritonserver
     image: nvcr.io/nvidia/tritonserver:23.10-py3
     container_name: tritonserver-server
-    command: ["tritonserver", "--model-repository=/models"]
+    command: ["tritonserver", "--model-repository=/models", "--model-control-mode=explicit"]
     networks:
       - tritonserver
     ports:
@@ -16,6 +16,7 @@ services:
       - "8002:8002" # Metrics
     volumes:
       - "${PWD}/data/model_repository:/models"
+    restart: on-failure
     deploy:
       resources:
         reservations:  
@@ -23,6 +24,8 @@ services:
             - driver: nvidia
               device_ids: ['0']
               capabilities: [compute,utility]
+
+
   webui: # https://github.com/duydvu/triton-inference-server-web-ui
     image: duyvd/triton-inference-server-web-ui:latest
     container_name: tritonserver-webui
@@ -35,14 +38,17 @@ services:
       - tritonserver
     ports:
       - "23000:3000"
+    restart: on-failure
+
   client:
     image: nvcr.io/nvidia/tritonserver:23.10-py3-sdk
     container_name: tritonserver-client
+    depends_on:
+      - server
     command: ["sleep", "infinity"]
     networks:
       - tritonserver
-    depends_on:
-      - server
+    restart: on-failure
 
 networks:
   tritonserver:
